@@ -2,7 +2,7 @@
 from .telemetry import send_telemetry
 from .utils import load_action_engine, load_instructions
 from .command_center import CommandCenter
-from defaults import default_get_playwright_driver
+from .defaults import default_get_playwright_driver
 import os
 import argparse
 import importlib.util

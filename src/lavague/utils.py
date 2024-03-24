@@ -1,5 +1,5 @@
 from .action_engine import ActionEngine, extract_first_python_code
-from .defaults import default_get_driver, DefaultEmbedder, DefaultLLM
+from .defaults import default_get_playwright_driver, DefaultEmbedder, DefaultLLM
 from .prompts import DEFAULT_PROMPT
 
 import importlib.util
