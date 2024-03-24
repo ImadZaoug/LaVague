@@ -4,6 +4,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from llama_index.llms.azure_openai import AzureOpenAI
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
@@ -46,3 +47,13 @@ def default_get_driver():
     
     driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
     return driver
+
+
+from playwright.sync_api import sync_playwright
+
+def default_get_playwright_driver():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        return page, browser

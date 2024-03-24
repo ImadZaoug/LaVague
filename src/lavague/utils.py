@@ -13,19 +13,15 @@ def import_from_path(path):
     spec.loader.exec_module(module)
     return module
 
-def load_action_engine(path, streaming):
-
+def load_action_engine(path, streaming, get_driver):
     config_module = import_from_path(path)
-    get_driver = getattr(config_module, "get_driver", default_get_driver)
     llm = getattr(config_module, "LLM", DefaultLLM)()
     embedder = getattr(config_module, "Embedder", DefaultEmbedder)()
-    
-    prompt_template= getattr(config_module, "prompt_template", DEFAULT_PROMPT)
+    prompt_template = getattr(config_module, "prompt_template", DEFAULT_PROMPT)
     cleaning_function = getattr(config_module, "cleaning_function", extract_first_python_code)
-
+    page, browser = get_driver()
     action_engine = ActionEngine(llm, embedder, prompt_template, cleaning_function, streaming=streaming)
-    
-    return action_engine, get_driver
+    return action_engine, page, browser
 
 def load_instructions(path):
     with open(path, "r") as file:

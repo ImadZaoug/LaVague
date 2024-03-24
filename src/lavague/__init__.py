@@ -2,7 +2,7 @@
 from .telemetry import send_telemetry
 from .utils import load_action_engine, load_instructions
 from .command_center import CommandCenter
-
+from defaults import default_get_playwright_driver
 import os
 import argparse
 import importlib.util
@@ -24,59 +24,29 @@ def import_from_path(path):
 
 def build():
     parser = argparse.ArgumentParser(description='Process a file.')
-
-    # Add the arguments
-    parser.add_argument('--file_path',
-                    type=str,
-                    required=True,
-                    help='the path to the file')
-
-    parser.add_argument('--config_path',
-                    type=str,
-                    required=True,
-                    help='the path to the Python config file')
-    # Execute the parse_args() method
+    parser.add_argument('--file_path', type=str, required=True, help='the path to the file')
+    parser.add_argument('--config_path', type=str, required=True, help='the path to the Python config file')
     args = parser.parse_args()
-    
     file_path = args.file_path
     config_path = args.config_path
-    
-    # Load the action engine and driver from config file
-    action_engine, get_driver = load_action_engine(config_path, streaming=False)
-    
-    driver = get_driver()
-    
-    # Gets the original source code of the get_driver method
-    source_code = inspect.getsource(get_driver)
 
-    # Split the source code into lines and remove the first line (method definition)
-    source_code_lines = source_code.splitlines()[1:]
-    source_code_lines = [line.strip() for line in source_code_lines[:-1]]
-    
-    # Execute the import lines
-    import_lines = [line for line in source_code_lines if line.startswith("from") or line.startswith("import")] 
-    exec("\n".join(import_lines))
+    action_engine, page, browser = load_action_engine(config_path, streaming=False, get_driver=default_get_playwright_driver)
 
-    output = "\n".join(source_code_lines)
-    
     base_url, instructions = load_instructions(file_path)
-
-    driver.get(base_url)
-    output += f"\ndriver.get('{base_url.strip()}')\n"
+    page.goto(base_url)
+    output = f"page.goto('{base_url.strip()}')\n"
 
     template_code = """\n########################################\n# Query: {instruction}\n# Code:\n{code}"""
 
     file_path = os.path.basename(file_path)
     file_path, _ = os.path.splitext(file_path)
-    
     config_path = os.path.basename(config_path)
     config_path, _ = os.path.splitext(config_path)
-    
     output_fn = file_path + "_" + config_path + ".py"
-    
+
     for instruction in tqdm(instructions):
         print(f"Processing instruction: {instruction}")
-        html = driver.page_source
+        html = page.content()
         code, source_nodes = action_engine.get_action(instruction, html)
         try:
             exec(code)
@@ -86,41 +56,28 @@ def build():
             print(f"Saving output to {output_fn}")
             with open(output_fn, "w") as file:
                 file.write(output)
-                break
+            break
         output += "\n" + template_code.format(instruction=instruction, code=code).strip()
-        send_telemetry(action_engine.llm.metadata.model_name, code, b"", html, source_nodes, instruction, base_url, "Lavague-build")  
+        send_telemetry(action_engine.llm.metadata.model_name, code, b"", html, source_nodes, instruction, base_url, "Lavague-build")
 
     print(f"Saving output to {output_fn}")
     with open(output_fn, "w") as file:
         file.write(output)
-            
+
+    browser.close()
+    
 def launch():
     parser = argparse.ArgumentParser(description='Process a file.')
-
-    # Add the arguments
-    parser.add_argument('--file_path',
-                    type=str,
-                    required=True,
-                    help='the path to the file')
-
-    parser.add_argument('--config_path',
-                    type=str,
-                    required=True,
-                    help='the path to the Python config file')
-    # Execute the parse_args() method
+    parser.add_argument('--file_path', type=str, required=True, help='the path to the file')
+    parser.add_argument('--config_path', type=str, required=True, help='the path to the Python config file')
     args = parser.parse_args()
-    
     file_path = args.file_path
     config_path = args.config_path
-    
-    # Load the action engine and driver setup function from config file
-    action_engine, get_driver = load_action_engine(config_path, streaming=True)
-    
-    # Initialize the driver
-    driver = get_driver()
-    
-    command_center = CommandCenter(action_engine, driver)
+
+    action_engine, page, browser = load_action_engine(config_path, streaming=True, get_driver=default_get_playwright_driver)
 
     base_url, instructions = load_instructions(file_path)
-        
+    command_center = CommandCenter(action_engine, page, browser)
     command_center.run(base_url, instructions)
+
+    browser.close()
