@@ -58,8 +58,6 @@ To use the Gemini LLM in the LaVague project, you can update the `defaults.py` f
 
 Please note that you will need to set the `GOOGLE_API_KEY` environment variable with a valid API key to use the Gemini LLM. Additionally, ensure that the `llama_index` library is installed and up-to-date.
 
-With these changes, the LaVague project should now support web automation using Playwright and allow you to leverage the Gemini LLM API alongside the existing APIs for generating code from natural language instructions.
-
 ## Test
 
 
