@@ -53,6 +53,14 @@ This file defines a class `LLM` that inherits from the `Gemini` class provided b
 
 To use the Gemini LLM in the LaVague project, you can update the `defaults.py` file to import the `LLM` class from `gemini.py` and use it as the default LLM or provide an option to select the desired LLM during runtime.
 
+
+## Gemini LLM Integration
+
 Please note that you will need to set the `GOOGLE_API_KEY` environment variable with a valid API key to use the Gemini LLM. Additionally, ensure that the `llama_index` library is installed and up-to-date.
 
 With these changes, the LaVague project should now support web automation using Playwright and allow you to leverage the Gemini LLM API alongside the existing APIs for generating code from natural language instructions.
+
+## Test
+
+
+The file "quick_tour_using_playwright.ipynb" is intended for testing with the Playwright library, but the Docker container is not yet prepared.
