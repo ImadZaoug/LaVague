@@ -1,92 +1,58 @@
-<p align="center">
-  <a href="https://github.com/lavague-ai/LaVague/stargazers"><img src="https://img.shields.io/github/stars/lavague-ai/LaVague.svg?style=for-the-badge" alt="Stargazers"></a>
-  <a href="https://github.com/lavague-ai/LaVague/issues"><img src="https://img.shields.io/github/issues/lavague-ai/LaVague.svg?style=for-the-badge" alt="Issues"></a>
-  <a href="https://github.com/lavague-ai/LaVague/network/members"><img src="https://img.shields.io/github/forks/lavague-ai/LaVague.svg?style=for-the-badge" alt="Forks"></a>
-  <a href="https://github.com/lavague-ai/LaVague/graphs/contributors"><img src="https://img.shields.io/github/contributors/lavague-ai/LaVague.svg?style=for-the-badge" alt="Contributors"></a>
-  <a href="https://github.com/lavague-ai/LaVague/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/lavague-ai/LaVague.svg?style=for-the-badge" alt="Apache License"></a>
-</p>
-</br>
+# LaVague: Integrating Playwright and Gemini LLM
 
-<div align="center">
-  <img src="static/logo.png" width=140px: alt="LaVague Logo">
-  <h1>Welcome to LaVague</h1>
+This README file outlines the changes made to the LaVague project to integrate the Playwright web automation library and add support for the Gemini LLM API alongside the existing APIs.
 
-<h4 align="center">
- <a href="https://discord.gg/SDxn9KpqX9" target="_blank">
-    <img src="https://img.shields.io/badge/discord-000000?style=for-the-badge&colorB=555" alt="Join our Discord server!">
-  </a>
-  <a href="https://docs.lavague.ai/en/latest/"><img src="https://img.shields.io/badge/docs-000000?style=for-the-badge&colorB=07f" alt="Docs"></a>
-</h4>
-  <p>Redefining internet surfing by transforming natural language instructions into seamless browser interactions.</p>
-<h1></h1>
-</div>
+## Playwright Integration
 
-## 🏄‍♀️ See LaVague in Action
+To enable web automation using Playwright instead of Selenium, the following changes were made to the LaVague codebase:
 
-Here are examples to show how LaVague can execute natural instructions on a browser to automate interactions with a website:
+### `defaults.py`
 
-<div>
-  <figure>
-    <img src="static/hf_lavague.gif" alt="LaVague Interaction Example" style="margin-right: 20px;">
-    <figcaption><b>LaVague interacting with Hugging Face's website.</b></figcaption>
-  </figure>
-  <br><br>
-</div>
+- Added a new function `default_get_playwright_driver()` to launch a Playwright browser instance and create a new context and page.
 
+### `utils.py`
 
-<div>
-  <figure>
-    <img src="static/irs_lavague.gif" alt="LaVague Workflow Example">
-    <figcaption><b>LaVague interacting with the IRS's website.</b></figcaption>
-  </figure>
-  <br>
-</div>
+- Updated the `load_action_engine()` function to accept a `get_driver` argument, which can be used to pass the `default_get_playwright_driver` function or any other custom driver initialization function.
 
-## 🎯 Motivations
+### `command_center.py`
 
-LaVague is designed to automate menial tasks on behalf of its users. Many of these tasks are repetitive, time-consuming, and require little to no cognitive effort. By automating these tasks, LaVague aims to free up time for more meaningful endeavors, allowing users to focus on what truly matters to them.
+- Modified the `CommandCenter` class to accept the Playwright `page` and `browser` instances instead of the Selenium `driver`.
+- Updated the `__process_url()` and `__process_instruction()` methods to use the Playwright `page` instance for navigation and content retrieval.
+- Added a new `__close_browser()` method to close the Playwright `page` and `browser` instances.
+- Updated the `__telemetry()` method to capture screenshots using the Playwright `page` instance.
+- Modified the `run()` method to create the Gradio components and connect them to the respective methods using the Playwright instances.
 
-By providing an engine turning natural language queries into Selenium code, LaVague is designed to make it easy for users or other AIs to automate easily express web workflows and execute them on a browser.
+### `__init__.py`
 
-One of the key usages we see is to automate tasks that are personal to users and require them to be logged in, for instance automating the process of paying bills, filling out forms or pulling data from specific websites. 
+- Updated the `build()` and `launch()` functions to use the `default_get_playwright_driver` function and handle the Playwright `page` and `browser` instances returned by `load_action_engine()`.
+- Removed the code that extracted import statements from the Selenium driver initialization function, as it is no longer needed with Playwright.
 
-LaVague is built on open-source projects and leverages open-sources models, either locally or remote, to ensure the transparency of the agent and ensures that it is aligned with users' interests.
+### `main.py`
 
-## ✨ Features
+- Removed the code related to Selenium driver initialization and handling, as it is no longer needed with Playwright.
 
-- **Natural Language Processing**: Understands instructions in natural language to perform browser interactions.
-- **Selenium Integration**: Seamlessly integrates with Selenium for automating web browsers.
-- **Open-Source**: Built on open-source projects such as transformers and llama-index, and leverages open-source models, either locally or remote, to ensure the transparency of the agent and ensures that it is aligned with users' interests.
-- **Local models for privacy and control**: Supports local models like ``Gemma-7b`` so that users can fully control their AI assistant and have privacy guarantees.
-- **Advanced AI techniques**: Uses a local embedding (``bge-small-en-v1.5``) first to perform RAG to extract the most relevant HTML pieces to feed the LLM answering the query, as directly dropping the full HTML code would not fit in context. Then leverages Few-shot learning and Chain of Thought to elicit the most relevant Selenium code to perform the action without having to finetune the LLM (``Nous-Hermes-2-Mixtral-8x7B-DPO``) for code generation.
+## Gemini LLM Integration
 
-## 🚀 Getting Started
+To add support for the Gemini LLM API alongside the existing APIs, a new file `gemini.py` was created in the folder containing the API codes:
 
-You can try LaVague in the following Colab notebook:
+```python
+import os
+from llama_index.llms.gemini import Gemini
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lavague-ai/LaVague/blob/main/docs/docs/get-started/quick-tour.ipynb)
+class LLM(Gemini):
+    def __init__(self):
+        max_new_tokens = 512
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if api_key is None:
+            raise ValueError("GOOGLE_API_KEY environment variable is not set")
+        else:
+            super().__init__(api_key=api_key, max_tokens=max_new_tokens, temperature=0.0)
+```
 
-## 🗺️ Roadmap
+This file defines a class `LLM` that inherits from the `Gemini` class provided by the `llama_index` library. The `__init__` method initializes the Gemini LLM with the specified API key and configuration settings.
 
-This is an early project but could grow to democratize transparent and aligned AI models to undertake actions for the sake of users on the internet.
+To use the Gemini LLM in the LaVague project, you can update the `defaults.py` file to import the `LLM` class from `gemini.py` and use it as the default LLM or provide an option to select the desired LLM during runtime.
 
-We see the following key areas to explore:
-- Fine-tune local models like a ``gemma-7b-it`` to be expert in Text2Action 
-- Improve retrieval to make sure only relevant pieces of code are used for code generation
-- Support other browser engines (playwright) or even other automation frameworks
+Please note that you will need to set the `GOOGLE_API_KEY` environment variable with a valid API key to use the Gemini LLM. Additionally, ensure that the `llama_index` library is installed and up-to-date.
 
-Keep up to date with our project backlog [here](https://github.com/orgs/lavague-ai/projects/1/views/2).
-
-## 🙋 Contributing
-
-We would love your help in making La Vague a reality. 
-
-Please check out our [contributing guide](./contributing.md) to see how you can get involved!
-
-If you are interested by this project, want to ask questions, contribute, or have proposals, please come on our [Discord](https://discord.gg/SDxn9KpqX9) to chat!
-
-### Set up your dev environment
-
-Install the chrome browser and driver on linux with ```bash install-dependencies.sh```. You will need admin privileges if you're missing system dependencies.
-
-Set up a development environment by running the following command in a virtual environment: ```pip install -e .[dev]```
+With these changes, the LaVague project should now support web automation using Playwright and allow you to leverage the Gemini LLM API alongside the existing APIs for generating code from natural language instructions.
